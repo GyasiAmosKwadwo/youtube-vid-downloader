@@ -177,7 +177,9 @@ class DownloaderApp:
 
         ydl_opts = {
             "outtmpl": os.path.join(output_path, "%(title)s.%(ext)s"),
-            "format": f"bv*[height<={max_height}]+ba/b[height<={max_height}]",
+            "format": f"bv*[ext=mp4][vcodec^=avc1][height<={max_height}]+ba[ext=m4a]/b[ext=mp4][height<={max_height}]/b[height<={max_height}]",
+            "merge_output_format": "mp4",
+            "recodevideo": "mp4",
             "noplaylist": False,
             "continuedl": True,
             "overwrites": False,
@@ -247,6 +249,7 @@ class DownloaderApp:
         self.log_queue.put(("log", f"Source: {url}"))
         self.log_queue.put(("log", f"Output: {output_path}"))
         self.log_queue.put(("log", f"Quality cap: {max_height}p"))
+        self.log_queue.put(("log", "Output format: MP4 (TV-friendly)"))
 
         self.is_downloading = True
         self.download_button.configure(state="disabled")

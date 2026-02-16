@@ -15,27 +15,40 @@ TubeSwift Downloader is a modern, GUI-based application for downloading YouTube 
 ## Prerequisites
 
 - **Python 3.x**
-- **yt-dlp**: The core downloading engine.
+- **ffmpeg**: Required so yt-dlp can merge/recode downloads into MP4.
 - **aria2** (Optional): Highly recommended for the "Fast mode" to work at its best.
 
 ## Installation
 
 1.  **Clone or download** this repository.
 
-2.  **Set up a virtual environment** (Recommended):
+2.  **Create a virtual environment**:
     ```bash
     python -m venv env
-    # Activate on Windows:
-    .\env\Scripts\Activate.ps1
     ```
 
-3.  **Install Python dependencies**:
+3.  **Activate the virtual environment**:
     ```bash
-    pip install yt-dlp
+    # Windows (PowerShell):
+    ./scripts/activate
+    # Windows (cmd):
+    .\env\Scripts\activate.bat
+    # macOS/Linux:
+    source env/bin/activate
+    ```
+
+4.  **Install Python dependencies**:
+    ```bash
+    pip install -r requirements.txt
     ```
     *(Note: `tkinter` is included with standard Python installations on Windows/macOS. On Linux, you may need to install `python3-tk`)*.
 
-4.  **Install Aria2 (Optional but Recommended)**:
+5.  **Install ffmpeg**:
+    -   **Windows**: Install from `ffmpeg.org` (or via `winget install Gyan.FFmpeg`) and add it to PATH.
+    -   **Linux**: `sudo apt install ffmpeg`
+    -   **macOS**: `brew install ffmpeg`
+
+6.  **Install Aria2 (Optional but Recommended)**:
     -   **Windows**: Download `aria2` from github.com/aria2/aria2, extract it, and add the folder containing `aria2c.exe` to your system's PATH environment variable.
     -   **Linux**: `sudo apt install aria2`
     -   **macOS**: `brew install aria2`
