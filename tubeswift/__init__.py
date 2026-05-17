@@ -1,1 +1,1 @@
-__all__ = ["app", "cli", "downloader", "ffmpeg", "models", "preflight"]
+__all__ = ["app", "cli", "downloader", "ffmpeg", "hosted_api", "models", "preflight"]

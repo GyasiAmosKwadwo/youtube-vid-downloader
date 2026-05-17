@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    TUBESWIFT_STORAGE_ROOT=/data/downloads
+
+WORKDIR /app
+
+COPY requirements.txt requirements-hosted.txt ./
+RUN pip install --no-cache-dir -r requirements-hosted.txt
+
+COPY download.py ./
+COPY tubeswift ./tubeswift
+
+RUN mkdir -p /data/downloads
+VOLUME ["/data/downloads"]
+
+EXPOSE 8000
+CMD ["uvicorn", "tubeswift.hosted_api:app", "--host", "0.0.0.0", "--port", "8000"]

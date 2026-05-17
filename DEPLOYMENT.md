@@ -1,62 +1,157 @@
 # Deployment Guide
 
-This project is primarily a desktop downloader. To make it available for others, you have two practical paths.
+This repo now supports two production paths:
 
-## 1) Distribute as a desktop app (fastest path)
+1. Desktop distribution with PyInstaller
+2. Hosted API service with background worker and filesystem storage (no database)
 
-Use this if you want users to install and run locally.
+## 1) Desktop release pipeline (fastest to ship)
 
-### Build executable with PyInstaller
+### Local build
 
 ```bash
+cd /Users/mac/Documents/projects/youtube-vid-downloader
 source env/bin/activate
-pip install pyinstaller
-pyinstaller --noconfirm --onefile --windowed --name TubeSwift download.py
+./scripts/build_desktop.sh
 ```
 
-Artifact is created in `dist/TubeSwift` (or `TubeSwift.exe` on Windows).
+Build output:
 
-### Publish
+- macOS/Linux: `dist/TubeSwift`
+- Windows: `dist/TubeSwift.exe`
 
-1. Create a GitHub repository.
-2. Upload the binary to a GitHub Release.
-3. Add install notes per OS in release description.
+### Automated GitHub Releases
 
-## 2) Host as a web service (scalable path)
+Workflow file: `.github/workflows/release-desktop.yml`
 
-Use this if users should access via browser.
+How it works:
 
-### Recommended architecture
+1. Push a tag such as `v1.0.0`.
+2. GitHub Actions builds binaries for macOS, Windows, Linux.
+3. Artifacts are attached to the GitHub release.
 
-1. Frontend: React/Next.js or simple Streamlit UI.
-2. API: FastAPI service to accept jobs.
-3. Worker: background queue (Celery/RQ) running `yt-dlp`.
-4. Storage: S3-compatible bucket for downloaded files.
-5. Database: Postgres for job status.
-6. Deployment: Render/Fly.io/Railway/AWS.
+Tag and push:
 
-### Flow
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
 
-1. User submits video URL.
-2. API validates input, creates job ID.
-3. Worker downloads to temporary storage.
-4. Worker uploads output to object storage.
-5. API returns signed download URL.
+## 2) Hosted product (no DB)
 
-### Why queue workers are necessary
+### Architecture
 
-Downloads are long-running and CPU/network heavy. Running directly in a request handler will time out and scale poorly.
+- FastAPI app for job APIs
+- In-process background worker queue
+- In-memory job state
+- Filesystem storage for outputs and zip archives
 
-## Security and policy checklist
+No database is used.
 
-- Rate limit incoming jobs per IP/user.
-- Add abuse monitoring and file-size limits.
-- Enforce allowed domains and URL validation.
-- Keep temporary files on short retention.
-- Review YouTube Terms of Service and local legal obligations before public hosting.
+Important tradeoff:
 
-## Suggested roadmap
+- Job metadata is lost when the service restarts.
+- Downloaded files remain on disk.
 
-1. Ship desktop binary first (1-2 days).
-2. Add hosted API prototype for private users.
-3. Add auth + billing + quotas before public launch.
+### API entrypoint
+
+- `tubeswift.hosted_api:app`
+
+### Run locally
+
+```bash
+cd /Users/mac/Documents/projects/youtube-vid-downloader
+source env/bin/activate
+pip install -r requirements-hosted.txt
+uvicorn tubeswift.hosted_api:app --host 0.0.0.0 --port "${PORT:-8000}" --workers 1
+```
+
+Storage root defaults to:
+
+- `~/Downloads`
+
+Override storage location:
+
+```bash
+export TUBESWIFT_STORAGE_ROOT=/absolute/path/to/storage
+```
+
+Optional CORS allow-list for browser clients:
+
+```bash
+export TUBESWIFT_CORS_ORIGINS=https://your-ui.example.com,https://admin.example.com
+```
+
+### Docker deployment
+
+```bash
+docker build -f Dockerfile.hosted -t tubeswift-hosted:latest .
+docker run --rm -p 8000:8000 \
+  -e TUBESWIFT_STORAGE_ROOT=/data/downloads \
+  -v /absolute/host/path:/data/downloads \
+  tubeswift-hosted:latest
+```
+
+### PaaS deployment (Procfile)
+
+This repo includes a `Procfile` with:
+
+- `web: uvicorn tubeswift.hosted_api:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1`
+
+Use that command as-is on platforms like Railway/Render/Heroku-style runtimes.
+
+### Render deployment (recommended for you)
+
+This repo now includes `render.yaml` for Blueprint deploys.
+
+What it configures:
+
+- Python web service
+- Build: `pip install -r requirements-hosted.txt`
+- Start: `uvicorn tubeswift.hosted_api:app --host 0.0.0.0 --port $PORT --workers 1`
+- Health check: `/health`
+- Persistent disk mounted at `/var/data` (storage root set to `/var/data/downloads`)
+
+Steps:
+
+1. Push this repo to GitHub.
+2. In Render, click New + -> Blueprint.
+3. Select your repository and apply the Blueprint.
+4. In Render service Environment, set:
+   - `TUBESWIFT_CORS_ORIGINS` to your frontend URL(s) (comma-separated).
+5. Deploy and wait for the service to become live.
+
+Verify:
+
+```bash
+curl https://YOUR-SERVICE.onrender.com/health
+```
+
+### Minimal API surface
+
+- `GET /health`
+- `POST /jobs`
+- `GET /jobs`
+- `GET /jobs/{job_id}`
+- `POST /jobs/{job_id}/cancel`
+- `GET /jobs/{job_id}/download`
+
+### Example request
+
+```bash
+curl -X POST http://localhost:8000/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID",
+    "max_height": 1080,
+    "performance_profile": "Turbo",
+    "output_mode": "Fastest"
+  }'
+```
+
+## Operational notes
+
+- Install `aria2c` in the container/host for maximum speed.
+- Apply reverse proxy limits and rate limiting before public exposure.
+- Review legal/compliance obligations for public media downloading services.
+- Keep `--workers 1` unless you add shared queue/state infrastructure (Redis + DB).
