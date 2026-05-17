@@ -248,11 +248,17 @@ class JobStore:
                 with self._lock:
                     current = self._jobs.get(job_id)
                     if current:
+                        error_text = str(exc)
+                        if "Sign in to confirm you’re not a bot" in error_text or "Sign in to confirm you're not a bot" in error_text:
+                            error_text += (
+                                " | Hint: set TUBESWIFT_YTDLP_COOKIE_FILE or TUBESWIFT_YTDLP_COOKIES_B64. "
+                                "Optionally set TUBESWIFT_YT_PO_TOKEN and TUBESWIFT_YT_PLAYER_CLIENTS."
+                            )
                         current["status"] = "failed"
                         current["finished_at"] = utc_now()
                         current["status_text"] = "Failed"
-                        current["error"] = str(exc)
-                        self._append_log(current, f"Error: {exc}")
+                        current["error"] = error_text
+                        self._append_log(current, f"Error: {error_text}")
 
             finally:
                 self._queue.task_done()
