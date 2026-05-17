@@ -317,6 +317,8 @@ def health() -> dict[str, Any]:
         "worker_alive": store._worker.is_alive(),
         "storage_root": str(store.storage_root),
         "ffmpeg": discover_ffmpeg() or "not-found",
+        "getpot_enabled": os.getenv("TUBESWIFT_YTDLP_ENABLE_GETPOT", "").strip().lower()
+        in {"1", "true", "yes", "on"},
     }
 
 

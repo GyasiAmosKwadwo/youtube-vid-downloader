@@ -1,4 +1,5 @@
 import base64
+import importlib.util
 import os
 import shutil
 import time
@@ -176,6 +177,37 @@ class DownloadEngine:
 
         return args or None
 
+    @staticmethod
+    def _env_enabled(name: str) -> bool:
+        return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+    def _getpot_provider_args(self) -> dict[str, dict[str, list[str]]] | None:
+        if not self._env_enabled("TUBESWIFT_YTDLP_ENABLE_GETPOT"):
+            return None
+
+        provider_key = os.getenv("TUBESWIFT_YTDLP_GETPOT_PROVIDER_KEY", "youtubepot-bgutilhttp").strip()
+        if not provider_key:
+            provider_key = "youtubepot-bgutilhttp"
+
+        provider_opts: dict[str, list[str]] = {}
+        base_url = os.getenv("TUBESWIFT_YTDLP_GETPOT_BASE_URL", "").strip()
+        if base_url:
+            provider_opts["base_url"] = [base_url]
+
+        framework_installed = importlib.util.find_spec("yt_dlp_plugins.extractor.getpot") is not None
+        if not framework_installed:
+            self.on_log(
+                "Warning: GetPOT is enabled but yt-dlp-get-pot plugin framework was not found. "
+                "Install yt-dlp-get-pot and a provider plugin."
+            )
+            return None
+
+        self.on_log(
+            f"GetPOT enabled via {provider_key} "
+            f"{'(custom base_url)' if base_url else '(default provider settings)'}."
+        )
+        return {provider_key: provider_opts}
+
     def _build_options(self) -> dict:
         aria2_available = shutil.which("aria2c") is not None
         profile = self.PROFILE_CONFIG.get(self.settings.performance_profile, self.PROFILE_CONFIG["Balanced"])
@@ -202,10 +234,18 @@ class DownloadEngine:
         if cookiefile:
             opts["cookiefile"] = cookiefile
 
+        extractor_args: dict[str, dict[str, list[str]]] = {}
         youtube_args = self._youtube_extractor_args()
         if youtube_args:
-            opts["extractor_args"] = {"youtube": youtube_args}
+            extractor_args["youtube"] = youtube_args
             self.on_log("Using YouTube extractor args from TUBESWIFT_YT_* env vars.")
+
+        getpot_provider_args = self._getpot_provider_args()
+        if getpot_provider_args:
+            extractor_args.update(getpot_provider_args)
+
+        if extractor_args:
+            opts["extractor_args"] = extractor_args
 
         if self.settings.output_mode == "MP4 Compatible":
             opts["merge_output_format"] = "mp4"
