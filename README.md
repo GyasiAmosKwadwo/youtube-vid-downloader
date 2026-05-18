@@ -16,6 +16,7 @@ TubeSwift is a modern YouTube downloader with a futuristic desktop UI and an ada
 - Preflight checks before download starts (URL, writable output, ffmpeg)
 - Cancel support for active downloads
 - CLI fallback if Tkinter is unavailable
+- Hosted API mode with queue worker and filesystem storage (no DB)
 
 ## Important performance note
 
@@ -38,7 +39,7 @@ To maximize practical speed gains:
   - from virtualenv package `imageio-ffmpeg`
 - Optional: `aria2c` on PATH for faster segmented downloads
 
-## Install
+## Install (desktop/CLI)
 
 ```bash
 cd /Users/mac/Documents/projects/youtube-vid-downloader
@@ -65,6 +66,34 @@ python -m tubeswift.cli "https://www.youtube.com/watch?v=VIDEO_ID" \
   -q 1080
 ```
 
+Default output path is the OS Downloads folder (`~/Downloads`) unless you pass `--output`.
+
+## Hosted API mode (no DB)
+
+```bash
+source env/bin/activate
+pip install -r requirements-hosted.txt
+uvicorn tubeswift.hosted_api:app --host 0.0.0.0 --port "${PORT:-8000}" --workers 1
+```
+
+Default hosted storage root is `~/Downloads`.
+Override with `TUBESWIFT_STORAGE_ROOT=/absolute/path`.
+Optional CORS list for a hosted frontend:
+`TUBESWIFT_CORS_ORIGINS=https://your-ui.example.com,https://admin.example.com`
+
+## Desktop build and release
+
+### Build locally with PyInstaller
+
+```bash
+source env/bin/activate
+./scripts/build_desktop.sh
+```
+
+### Automated GitHub release builds
+
+Push a tag like `v1.0.0`; workflow `.github/workflows/release-desktop.yml` builds and publishes binaries for macOS, Windows, and Linux.
+
 ## Tkinter fix (if GUI is missing)
 
 - macOS (Homebrew Python 3.11):
@@ -89,12 +118,10 @@ brew install aria2
 sudo apt install aria2
 ```
 
-## Hosting and publishing
+## Deployment details
 
-See [DEPLOYMENT.md](/Users/mac/Documents/projects/youtube-vid-downloader/DEPLOYMENT.md) for:
-
-- Desktop app distribution (PyInstaller + GitHub Releases)
-- Hosted web service architecture (API + queue + object storage)
+See [DEPLOYMENT.md](DEPLOYMENT.md) for production instructions.
+For Render specifically, use the included `render.yaml` Blueprint file.
 
 ## Project layout
 
@@ -102,6 +129,9 @@ See [DEPLOYMENT.md](/Users/mac/Documents/projects/youtube-vid-downloader/DEPLOYM
 - `tubeswift/app.py`: GUI
 - `tubeswift/downloader.py`: download engine and speed profiles
 - `tubeswift/cli.py`: CLI mode
+- `tubeswift/hosted_api.py`: hosted API + in-process worker queue
 - `tubeswift/preflight.py`: input/dependency checks
 - `tubeswift/models.py`: settings/progress models
 - `tubeswift/ffmpeg.py`: ffmpeg discovery
+- `scripts/build_desktop.sh`: desktop packaging script
+- `Dockerfile.hosted`: hosted image build
