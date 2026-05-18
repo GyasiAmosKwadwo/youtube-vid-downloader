@@ -86,6 +86,11 @@ If hosted YouTube downloads fail with `Sign in to confirm you're not a bot`, set
 - `TUBESWIFT_YTDLP_COOKIES_B64` (base64 cookies file contents)
 - Optional: `TUBESWIFT_YT_PLAYER_CLIENTS`, `TUBESWIFT_YT_PO_TOKEN`, `TUBESWIFT_YT_VISITOR_DATA`
 
+Automated PO token path (GetPOT provider plugins):
+- `TUBESWIFT_YTDLP_ENABLE_GETPOT=true`
+- `TUBESWIFT_YTDLP_GETPOT_PROVIDER_KEY=youtubepot-bgutilhttp`
+- Optional: `TUBESWIFT_YTDLP_GETPOT_BASE_URL=http://127.0.0.1:4416`
+
 ## Desktop build and release
 
 ### Build locally with PyInstaller

@@ -97,6 +97,21 @@ export TUBESWIFT_YT_PO_TOKEN=web+YOUR_PO_TOKEN
 export TUBESWIFT_YT_VISITOR_DATA=YOUR_VISITOR_DATA
 ```
 
+Automated PO token retrieval (GetPOT plugin path):
+
+```bash
+export TUBESWIFT_YTDLP_ENABLE_GETPOT=true
+export TUBESWIFT_YTDLP_GETPOT_PROVIDER_KEY=youtubepot-bgutilhttp
+# Optional when provider is not on localhost:
+export TUBESWIFT_YTDLP_GETPOT_BASE_URL=https://your-provider.example.com
+```
+
+This repo's hosted requirements include:
+- `yt-dlp-get-pot` (framework)
+- `bgutil-ytdlp-pot-provider` (provider plugin)
+
+For `youtubepot-bgutilhttp`, run the provider HTTP server separately (for example using `brainicism/bgutil-ytdlp-pot-provider`) and point `TUBESWIFT_YTDLP_GETPOT_BASE_URL` to it.
+
 ### Docker deployment
 
 ```bash
