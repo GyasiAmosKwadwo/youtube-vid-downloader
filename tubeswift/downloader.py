@@ -1,5 +1,8 @@
+import base64
+import os
 import shutil
 import time
+from pathlib import Path
 from typing import Callable
 
 import yt_dlp
@@ -127,6 +130,52 @@ class DownloadEngine:
         # MP4 Compatible keeps compatibility-first behavior.
         return f"bv*[height<={height}]+ba/b[height<={height}]/best"
 
+    def _resolve_cookiefile(self) -> str | None:
+        cookie_file_env = os.getenv("TUBESWIFT_YTDLP_COOKIE_FILE", "").strip()
+        if cookie_file_env:
+            cookie_path = Path(cookie_file_env).expanduser()
+            if cookie_path.is_file():
+                self.on_log("Using yt-dlp cookies from TUBESWIFT_YTDLP_COOKIE_FILE.")
+                return str(cookie_path)
+            self.on_log(
+                "Warning: TUBESWIFT_YTDLP_COOKIE_FILE is set but file is missing. "
+                "Continuing without cookies."
+            )
+
+        cookies_b64 = os.getenv("TUBESWIFT_YTDLP_COOKIES_B64", "").strip()
+        if not cookies_b64:
+            return None
+
+        target = Path("/tmp/tubeswift_cookies.txt")
+        try:
+            decoded = base64.b64decode(cookies_b64).decode("utf-8")
+            target.write_text(decoded, encoding="utf-8")
+            target.chmod(0o600)
+            self.on_log("Using yt-dlp cookies from TUBESWIFT_YTDLP_COOKIES_B64.")
+            return str(target)
+        except Exception as exc:
+            self.on_log(f"Warning: failed to decode TUBESWIFT_YTDLP_COOKIES_B64 ({exc}).")
+            return None
+
+    def _youtube_extractor_args(self) -> dict[str, list[str]] | None:
+        args: dict[str, list[str]] = {}
+
+        player_clients = os.getenv("TUBESWIFT_YT_PLAYER_CLIENTS", "").strip()
+        if player_clients:
+            clients = [value.strip() for value in player_clients.split(",") if value.strip()]
+            if clients:
+                args["player_client"] = clients
+
+        visitor_data = os.getenv("TUBESWIFT_YT_VISITOR_DATA", "").strip()
+        if visitor_data:
+            args["visitor_data"] = [visitor_data]
+
+        po_token = os.getenv("TUBESWIFT_YT_PO_TOKEN", "").strip()
+        if po_token:
+            args["po_token"] = [po_token]
+
+        return args or None
+
     def _build_options(self) -> dict:
         aria2_available = shutil.which("aria2c") is not None
         profile = self.PROFILE_CONFIG.get(self.settings.performance_profile, self.PROFILE_CONFIG["Balanced"])
@@ -148,6 +197,15 @@ class DownloadEngine:
             "quiet": True,
             "no_warnings": True,
         }
+
+        cookiefile = self._resolve_cookiefile()
+        if cookiefile:
+            opts["cookiefile"] = cookiefile
+
+        youtube_args = self._youtube_extractor_args()
+        if youtube_args:
+            opts["extractor_args"] = {"youtube": youtube_args}
+            self.on_log("Using YouTube extractor args from TUBESWIFT_YT_* env vars.")
 
         if self.settings.output_mode == "MP4 Compatible":
             opts["merge_output_format"] = "mp4"

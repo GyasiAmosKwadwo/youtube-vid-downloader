@@ -81,6 +81,11 @@ Override with `TUBESWIFT_STORAGE_ROOT=/absolute/path`.
 Optional CORS list for a hosted frontend:
 `TUBESWIFT_CORS_ORIGINS=https://your-ui.example.com,https://admin.example.com`
 
+If hosted YouTube downloads fail with `Sign in to confirm you're not a bot`, set:
+- `TUBESWIFT_YTDLP_COOKIE_FILE` (server-side cookies.txt path), or
+- `TUBESWIFT_YTDLP_COOKIES_B64` (base64 cookies file contents)
+- Optional: `TUBESWIFT_YT_PLAYER_CLIENTS`, `TUBESWIFT_YT_PO_TOKEN`, `TUBESWIFT_YT_VISITOR_DATA`
+
 ## Desktop build and release
 
 ### Build locally with PyInstaller

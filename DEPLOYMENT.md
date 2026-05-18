@@ -82,6 +82,21 @@ Optional CORS allow-list for browser clients:
 export TUBESWIFT_CORS_ORIGINS=https://your-ui.example.com,https://admin.example.com
 ```
 
+If YouTube returns `"Sign in to confirm you're not a bot"` on hosted infrastructure, add auth inputs for yt-dlp:
+
+```bash
+# Option A: cookies file path available on server
+export TUBESWIFT_YTDLP_COOKIE_FILE=/absolute/path/cookies.txt
+
+# Option B: base64-encoded cookies content (good for PaaS env vars)
+export TUBESWIFT_YTDLP_COOKIES_B64=BASE64_COOKIES_CONTENT
+
+# Optional YouTube extractor hints
+export TUBESWIFT_YT_PLAYER_CLIENTS=web,default
+export TUBESWIFT_YT_PO_TOKEN=web+YOUR_PO_TOKEN
+export TUBESWIFT_YT_VISITOR_DATA=YOUR_VISITOR_DATA
+```
+
 ### Docker deployment
 
 ```bash
@@ -119,6 +134,9 @@ Steps:
 3. Select your repository and apply the Blueprint.
 4. In Render service Environment, set:
    - `TUBESWIFT_CORS_ORIGINS` to your frontend URL(s) (comma-separated).
+   - If needed for YouTube anti-bot checks:
+     - `TUBESWIFT_YTDLP_COOKIES_B64`
+     - Optional: `TUBESWIFT_YT_PO_TOKEN`, `TUBESWIFT_YT_PLAYER_CLIENTS`
 5. Deploy and wait for the service to become live.
 
 Verify:
@@ -155,3 +173,4 @@ curl -X POST http://localhost:8000/jobs \
 - Apply reverse proxy limits and rate limiting before public exposure.
 - Review legal/compliance obligations for public media downloading services.
 - Keep `--workers 1` unless you add shared queue/state infrastructure (Redis + DB).
+- For Render and other cloud hosts, YouTube may challenge anonymous requests; authenticated cookies and/or PO token may be required.
