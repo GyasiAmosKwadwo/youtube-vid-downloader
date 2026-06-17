@@ -36,7 +36,14 @@ def _parse_args() -> argparse.Namespace:
         choices=["Fastest", "MP4 Compatible"],
         help="Fastest skips forced remux when possible; MP4 Compatible prioritizes mp4 output",
     )
+    parser.add_argument(
+        "--download-type",
+        default="video",
+        choices=["video", "mp3"],
+        help="Whether to download a video file or convert audio to MP3.",
+    )
     return parser.parse_args()
+
 
 
 def main() -> int:
@@ -57,7 +64,9 @@ def main() -> int:
         max_height=args.quality,
         performance_profile=args.profile,
         output_mode=args.output_mode,
+        download_type=args.download_type,
     )
+
 
     def on_log(message: str) -> None:
         print(message)

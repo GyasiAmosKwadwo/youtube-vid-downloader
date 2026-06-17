@@ -28,6 +28,8 @@ class CreateJobRequest(BaseModel):
     max_height: int = Field(default=1080)
     performance_profile: str = Field(default="Turbo")
     output_mode: str = Field(default="Fastest")
+    download_type: str = Field(default="video")
+
 
 
 class JobResponse(BaseModel):
@@ -61,6 +63,10 @@ class JobStore:
 
         if payload.output_mode not in {"Fastest", "MP4 Compatible"}:
             raise HTTPException(status_code=422, detail="Invalid output_mode")
+
+        if payload.download_type not in {"video", "mp3"}:
+            raise HTTPException(status_code=422, detail="Invalid download_type")
+
 
         job_id = uuid.uuid4().hex
         job_dir = self.storage_root / job_id
@@ -187,7 +193,9 @@ class JobStore:
                     max_height=request_data["max_height"],
                     performance_profile=request_data["performance_profile"],
                     output_mode=request_data["output_mode"],
+                    download_type=request_data["download_type"],
                 )
+
 
                 def on_log(msg: str) -> None:
                     with self._lock:

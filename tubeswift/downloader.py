@@ -123,6 +123,10 @@ class DownloadEngine:
             )
 
     def _build_format_selector(self) -> str:
+        # MP3 mode: download best audio only.
+        if self.settings.download_type == "mp3":
+            return "bestaudio/best"
+
         height = self.settings.max_height
         # Fastest prefers already muxed streams to avoid merge/remux overhead.
         if self.settings.output_mode == "Fastest":
@@ -130,6 +134,7 @@ class DownloadEngine:
 
         # MP4 Compatible keeps compatibility-first behavior.
         return f"bv*[height<={height}]+ba/b[height<={height}]/best"
+
 
     def _resolve_cookiefile(self) -> str | None:
         cookie_file_env = os.getenv("TUBESWIFT_YTDLP_COOKIE_FILE", "").strip()
@@ -247,9 +252,24 @@ class DownloadEngine:
         if extractor_args:
             opts["extractor_args"] = extractor_args
 
-        if self.settings.output_mode == "MP4 Compatible":
+        if self.settings.download_type == "mp3":
+            opts.update(
+                {
+                    "postprocessors": [
+                        {
+                            "key": "FFmpegExtractAudio",
+                            "preferredcodec": "mp3",
+                            "preferredquality": "192",
+                        }
+                    ],
+                    # Ensure output is named with .mp3.
+                    "outtmpl": str(self.settings.output_dir / "%(title)s.%(ext)s"),
+                }
+            )
+        elif self.settings.output_mode == "MP4 Compatible":
             opts["merge_output_format"] = "mp4"
             opts["remux_video"] = "mp4"
+
 
         ffmpeg_path = discover_ffmpeg()
         if ffmpeg_path:
