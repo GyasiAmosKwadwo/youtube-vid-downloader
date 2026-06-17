@@ -9,6 +9,8 @@ class DownloadSettings:
     max_height: int
     performance_profile: str
     output_mode: str
+    download_type: str  # "video" or "mp3"
+
 
 
 @dataclass(frozen=True)

@@ -202,13 +202,25 @@ class DownloaderApp:
         output_box.grid(row=6, column=2, sticky="ew", pady=(6, 14))
         output_box.bind("<<ComboboxSelected>>", lambda _e: self._update_profile_hint())
 
+        ttk.Label(controls, text="Download Type", style="Label.TLabel").grid(row=8, column=0, sticky="w", pady=(10, 6))
+        self.download_type_var = tk.StringVar(value="Video")
+        download_type_box = ttk.Combobox(
+            controls,
+            textvariable=self.download_type_var,
+            values=["Video", "MP3"],
+            state="readonly",
+            width=16,
+        )
+        download_type_box.grid(row=8, column=1, columnspan=2, sticky="ew", pady=(10, 6))
+        download_type_box.bind("<<ComboboxSelected>>", lambda _e: self._update_profile_hint())
+
         self.profile_hint_var = tk.StringVar(value="Turbo + Fastest targets peak throughput and minimal post-processing.")
         ttk.Label(controls, textvariable=self.profile_hint_var, style="Meta.TLabel", wraplength=430).grid(
-            row=7, column=0, columnspan=3, sticky="w", pady=(0, 16)
+            row=9, column=0, columnspan=3, sticky="w", pady=(0, 16)
         )
 
         actions = ttk.Frame(controls, style="Card.TFrame")
-        actions.grid(row=8, column=0, columnspan=3, sticky="ew")
+        actions.grid(row=10, column=0, columnspan=3, sticky="ew")
 
         self.download_button = ttk.Button(
             actions, text="Start Hyper Download", style="Primary.TButton", command=self.start_download
@@ -225,11 +237,11 @@ class DownloaderApp:
         self.cancel_button.pack(side="left", padx=(8, 0))
 
         ttk.Label(controls, text="Live Status", style="CardTitle.TLabel").grid(
-            row=9, column=0, sticky="w", pady=(20, 8)
+            row=11, column=0, sticky="w", pady=(20, 8)
         )
 
         status_panel = ttk.Frame(controls, style="Panel.TFrame", padding=10)
-        status_panel.grid(row=10, column=0, columnspan=3, sticky="ew")
+        status_panel.grid(row=12, column=0, columnspan=3, sticky="ew")
 
         ttk.Label(status_panel, text="State", style="Meta.TLabel").grid(row=0, column=0, sticky="w")
         self.status_var = tk.StringVar(value="Idle")
@@ -246,6 +258,7 @@ class DownloaderApp:
         for idx in range(3):
             controls.columnconfigure(idx, weight=1)
         status_panel.columnconfigure(0, weight=1)
+
 
     def _build_telemetry(self, parent: ttk.Frame) -> None:
         top_panel = ttk.Frame(parent, style="Panel.TFrame", padding=16)
@@ -348,8 +361,10 @@ class DownloaderApp:
         max_height = self.max_height_var.get().strip()
         performance_profile = self.profile_var.get().strip()
         output_mode = self.output_mode_var.get().strip()
+        download_type = self.download_type_var.get().strip()
 
         if not url:
+
             raise PreflightError("Please enter a YouTube video or playlist URL.")
         if not output_path:
             raise PreflightError("Please choose an output folder.")
@@ -365,6 +380,8 @@ class DownloaderApp:
             raise PreflightError("Invalid performance profile selected.")
         if output_mode not in {"Fastest", "MP4 Compatible"}:
             raise PreflightError("Invalid output mode selected.")
+        if download_type not in {"Video", "MP3"}:
+            raise PreflightError("Invalid download type selected.")
 
         output_dir = Path(output_path)
         ensure_output_dir(output_dir)
@@ -376,7 +393,9 @@ class DownloaderApp:
             max_height=max_height_int,
             performance_profile=performance_profile,
             output_mode=output_mode,
+            download_type=download_type.lower(),
         )
+
 
     def start_download(self) -> None:
         if self.is_downloading:
@@ -398,7 +417,9 @@ class DownloaderApp:
         self.log_queue.put(("log", f"Resolution Cap: {settings.max_height}p"))
         self.log_queue.put(("log", f"Performance Profile: {settings.performance_profile}"))
         self.log_queue.put(("log", f"Output Strategy: {settings.output_mode}"))
+        self.log_queue.put(("log", f"Download Type: {settings.download_type}"))
         self.log_queue.put(("log", f"ffmpeg: {discover_ffmpeg() or 'not found'}"))
+
 
         self.is_downloading = True
         self.cancel_requested = False

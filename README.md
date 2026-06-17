@@ -57,14 +57,25 @@ pip install -r requirements.txt
 python download.py
 ```
 
+In the GUI, set **Download Type** to **MP3** to extract audio as an `.mp3`.
+
+
 ### CLI mode
 
 ```bash
+# Video download (default)
 python -m tubeswift.cli "https://www.youtube.com/watch?v=VIDEO_ID" \
   --profile Extreme \
   --output-mode Fastest \
   -q 1080
+
+# Convert to MP3
+python -m tubeswift.cli "https://www.youtube.com/watch?v=VIDEO_ID" \
+  --profile Extreme \
+  --output-mode Fastest \
+  --download-type mp3
 ```
+
 
 Default output path is the OS Downloads folder (`~/Downloads`) unless you pass `--output`.
 
